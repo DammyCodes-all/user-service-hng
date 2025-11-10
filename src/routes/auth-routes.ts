@@ -4,7 +4,7 @@ import {
   login,
   refreshToken,
   logoutUser,
-} from "@/controllers/auth-controller";
+} from "../controllers/auth-controller";
 export const AuthRoutes = (app: FastifyInstance) => {
   app.post("/register", register);
   app.post("/login", login);

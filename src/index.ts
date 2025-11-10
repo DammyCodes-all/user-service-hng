@@ -3,10 +3,10 @@ import dotenv from "dotenv";
 import { AuthRoutes } from "./routes/auth-routes";
 import { UserRoutes } from "./routes/user-routes";
 import jwt from "jsonwebtoken";
-import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaClient } from "./generated/prisma/client";
 dotenv.config();
 export const prisma = new PrismaClient();
-const app = fastify({
+export const app = fastify({
   logger: {
     level: "info",
     transport: {
@@ -48,10 +48,15 @@ export const routes = (app: FastifyInstance) => {
   });
 };
 app.register(routes, { prefix: "/api/v1" });
-app.listen({ port, host: "0.0.0.0" }, (err, address) => {
-  if (err) {
-    console.error(err);
-    process.exit(1);
-  }
-  console.log(`Server listening at ${address}`);
-});
+
+// Only start the server when this file is executed directly.
+// This allows importing the app (for tests) without binding to a port.
+if (require.main === module) {
+  app.listen({ port, host: "0.0.0.0" }, (err, address) => {
+    if (err) {
+      console.error(err);
+      process.exit(1);
+    }
+    console.log(`Server listening at ${address}`);
+  });
+}

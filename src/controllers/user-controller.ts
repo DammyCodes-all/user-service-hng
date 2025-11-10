@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyRequest, RouteHandlerMethod } from "fastify";
-import { prisma } from "@/index";
+import { prisma } from "../index";
 import id from "zod/v4/locales/id.js";
 
 export const getUserProfile = async (

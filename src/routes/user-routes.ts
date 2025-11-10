@@ -8,8 +8,8 @@ import {
   addPushToken,
   updatePushTokenById,
   deletePushTokenById,
-} from "@/controllers/user-controller";
-import { verifyToken } from "@/middleware/verifyToken";
+} from "../controllers/user-controller";
+import { verifyToken } from "../middleware/verifyToken";
 export const UserRoutes = (app: FastifyInstance) => {
   app.get("/profile", { preHandler: [verifyToken] }, getUserProfile);
   app.get<{ Params: { id: string } }>("/profile/:id", getProfileById);
