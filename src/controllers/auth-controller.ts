@@ -134,6 +134,7 @@ export const register = async (
     if (!parsedBody.success) {
       return reply.status(400).send({ error: "Invalid request body" });
     }
+    const { role } = req.body;
     const { name, password, email } = parsedBody.data;
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing)
@@ -144,6 +145,7 @@ export const register = async (
         email,
         name,
         password: hashedPassword,
+        role: role || "user",
       },
     });
     const { accessToken, refreshToken } = generateTokens({

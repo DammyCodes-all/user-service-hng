@@ -4,7 +4,7 @@ import { AuthRoutes } from "./routes/auth-routes";
 import { UserRoutes } from "./routes/user-routes";
 import { PrismaClient } from "@/generated/prisma/client";
 dotenv.config();
-const app = fastify();
+const app = fastify({ logger: true });
 const port = process.env.PORT! ? parseInt(process.env.PORT) : 8000;
 
 app.register(AuthRoutes, { prefix: "/auth" });

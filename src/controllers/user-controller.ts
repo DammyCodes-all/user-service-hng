@@ -1,7 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { PrismaClient } from "@/generated/prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/index";
 
 export const getUserProfile = async (
   req: FastifyRequest,
@@ -11,6 +9,26 @@ export const getUserProfile = async (
     const userId = (req as FastifyRequest & { user?: any }).user?.id ?? null;
     if (!userId) {
       return reply.status(401).send({ message: "Unauthorized" });
+    }
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return reply.status(404).send({ message: "User not found" });
+    }
+    return reply.status(200).send({ user });
+  } catch (error) {
+    console.error(error);
+    return reply.status(500).send({ message: "Internal Server Error" });
+  }
+};
+
+export const getProfileById = async (
+  req: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply
+) => {
+  try {
+    const userId = req.params.id;
+    if (!userId) {
+      return reply.status(400).send({ message: "User ID is required" });
     }
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
