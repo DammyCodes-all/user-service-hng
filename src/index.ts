@@ -1,13 +1,17 @@
 import fastify from "fastify";
 import dotenv from "dotenv";
+import { AuthRoutes } from "./routes/auth-routes";
 dotenv.config();
-const server = fastify();
+const app = fastify();
+const port = process.env.PORT! ? parseInt(process.env.PORT) : 8000;
 
-server.get("/ping", async (request, reply) => {
+app.register(AuthRoutes, { prefix: "/auth" });
+
+app.get("/ping", async (request, reply) => {
   return "pong\n";
 });
 
-server.listen({ port: 8080, host: "0.0.0.0" }, (err, address) => {
+app.listen({ port, host: "0.0.0.0" }, (err, address) => {
   if (err) {
     console.error(err);
     process.exit(1);
