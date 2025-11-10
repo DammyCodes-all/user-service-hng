@@ -13,7 +13,7 @@ app.get("/ping", async (request, reply) => {
   return "pong\n";
 });
 
-const prisma = new PrismaClient();
+export const prisma = new PrismaClient();
 app.get("/health", async (request, reply) => {
   const status: any = {
     status: "ok",

@@ -1,11 +1,10 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import type { RegisterBody } from "@/lib/auth-types";
 import { z } from "zod";
-import { PrismaClient } from "@/generated/prisma/client";
+import { prisma } from "@/index";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { generateTokens } from "@/utils/generate-tokens";
-const prisma = new PrismaClient();
 
 const registerSchema = z.object({
   name: z.string(),
@@ -26,9 +25,8 @@ export const logoutUser = async (req: FastifyRequest, reply: FastifyReply) => {
     }
 
     const payload: any = jwt.verify(token, process.env.ACCESS_SECRET!);
-    console.log(payload);
     const user = await prisma.user.findUnique({
-      where: { id: JSON.parse(payload.userId) },
+      where: { id: payload.userId },
     });
 
     if (!user) {
@@ -57,12 +55,15 @@ export const refreshToken = async (
   try {
     const payload: any = jwt.verify(token, process.env.REFRESH_SECRET!);
     const user = await prisma.user.findUnique({
-      where: { id: JSON.parse(payload.userId) },
+      where: { id: payload.userId },
     });
     if (!user || user.refreshToken !== token)
       return reply.code(401).send({ message: "Invalid refresh token" });
 
-    const { accessToken, refreshToken: newRefresh } = generateTokens(user.id);
+    const { accessToken, refreshToken: newRefresh } = generateTokens({
+      userId: user.id,
+      role: user.role,
+    });
 
     await prisma.user.update({
       where: { id: user.id },
@@ -100,9 +101,10 @@ export const login = async (
         .status(400)
         .send({ message: "Invalid password. Check Credentials and try again" });
     }
-    const { accessToken, refreshToken } = generateTokens(
-      JSON.stringify(user.id)
-    );
+    const { accessToken, refreshToken } = generateTokens({
+      userId: user.id,
+      role: user.role,
+    });
     await prisma.user.update({
       where: { email },
       data: { refreshToken },
@@ -145,7 +147,10 @@ export const register = async (
         password: hashedPassword,
       },
     });
-    const { accessToken, refreshToken } = generateTokens(user.id);
+    const { accessToken, refreshToken } = generateTokens({
+      userId: user.id,
+      role: user.role,
+    });
     await prisma.user.update({
       where: { email },
       data: { refreshToken },

@@ -8,7 +8,7 @@ export const getUserProfile = async (
   reply: FastifyReply
 ) => {
   try {
-    const userId = (req as FastifyRequest & { userId?: any }).userId ?? null;
+    const userId = (req as FastifyRequest & { user?: any }).user?.id ?? null;
     if (!userId) {
       return reply.status(401).send({ message: "Unauthorized" });
     }
