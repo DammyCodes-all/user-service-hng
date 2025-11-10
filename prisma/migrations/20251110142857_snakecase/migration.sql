@@ -6,8 +6,8 @@ CREATE TABLE "User" (
     "password" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'user',
     "refreshToken" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -16,8 +16,8 @@ CREATE TABLE "User" (
 CREATE TABLE "UserPreference" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "emailEnabled" BOOLEAN NOT NULL DEFAULT true,
-    "pushEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "email_enabled" BOOLEAN NOT NULL DEFAULT true,
+    "push_enabled" BOOLEAN NOT NULL DEFAULT true,
     "language" TEXT NOT NULL DEFAULT 'en',
     "timezone" TEXT,
 
@@ -30,8 +30,8 @@ CREATE TABLE "PushToken" (
     "userId" TEXT NOT NULL,
     "token" TEXT NOT NULL,
     "platform" TEXT NOT NULL DEFAULT 'android',
-    "deviceName" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "device_name" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "PushToken_pkey" PRIMARY KEY ("id")
 );

@@ -69,7 +69,7 @@ export const refreshToken = async (
       data: { refreshToken: newRefresh },
     });
 
-    return reply.send({ accessToken, refreshToken: newRefresh });
+    return reply.send({ access_token: accessToken, refresh_token: newRefresh });
   } catch (err) {
     console.error(err);
     return reply
@@ -116,8 +116,8 @@ export const login = async (
         role: user?.role,
       },
       message: "User logged in successfully",
-      accessToken,
-      refreshToken,
+      access_token: accessToken,
+      refresh_token: refreshToken,
     });
   } catch (error) {
     console.error(error);
@@ -164,8 +164,8 @@ export const register = async (
         role: user?.role,
       },
       message: "User registered successfully",
-      accessToken,
-      refreshToken,
+      access_token: accessToken,
+      refresh_token: refreshToken,
     });
   } catch (error) {
     console.error(error);

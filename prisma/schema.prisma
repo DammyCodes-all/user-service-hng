@@ -22,8 +22,8 @@ model User {
   password     String
   role         String   @default("user")
   refreshToken String?  // store the latest refresh token
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
   preference   UserPreference? @relation("UserPreferenceToUser")
   pushTokens   PushToken[] @relation("PushTokenToUser")
 }
@@ -32,8 +32,8 @@ model User {
 model UserPreference {
   id           String   @id @default(uuid())
   userId       String   @unique
-  emailEnabled Boolean  @default(true)
-  pushEnabled  Boolean  @default(true)
+  email_enabled Boolean  @default(true)
+  push_enabled  Boolean  @default(true)
   language     String   @default("en")
   timezone     String?  
   user         User     @relation("UserPreferenceToUser", fields: [userId], references: [id], onDelete: Cascade)
@@ -44,8 +44,8 @@ model PushToken {
   userId     String
   token      String
   platform   String   @default("android")// e.g., "android", "ios", "web"
-  deviceName String?  // optional: "iPhone 15 Pro"
-  createdAt  DateTime @default(now())
+  device_name String?  // optional: "iPhone 15 Pro"
+  created_at  DateTime @default(now())
   user       User     @relation("PushTokenToUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])

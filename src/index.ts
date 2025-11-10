@@ -2,9 +2,22 @@ import fastify from "fastify";
 import dotenv from "dotenv";
 import { AuthRoutes } from "./routes/auth-routes";
 import { UserRoutes } from "./routes/user-routes";
+import jwt from "jsonwebtoken";
 import { PrismaClient } from "@/generated/prisma/client";
 dotenv.config();
-const app = fastify({ logger: true });
+const app = fastify({
+  logger: {
+    level: "info",
+    transport: {
+      target: "pino-pretty",
+      options: {
+        colorize: true,
+        translateTime: "SYS:HH:MM:ss Z",
+        ignore: "pid,hostname",
+      },
+    },
+  },
+});
 const port = process.env.PORT! ? parseInt(process.env.PORT) : 8000;
 
 app.register(AuthRoutes, { prefix: "/auth" });

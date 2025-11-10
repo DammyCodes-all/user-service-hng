@@ -26,15 +26,8 @@ export async function verifyAdmin(req: FastifyRequest, reply: FastifyReply) {
   const user = (req as any).user;
   if (!user) return reply.code(401).send({ message: "No authenticated user" });
 
-  // Prefer canonical comparison
   const role = (user.role ?? "").toString().toLowerCase();
   if (role !== "admin") {
-    return reply.code(403).send({ message: "Forbidden: Admins only" });
-  }
-
-  // Optionally, re-affirm role in DB to prevent stale/forged tokens
-  const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
-  if (!dbUser || (dbUser.role ?? "").toString().toLowerCase() !== "admin") {
     return reply.code(403).send({ message: "Forbidden: Admins only" });
   }
   return;
