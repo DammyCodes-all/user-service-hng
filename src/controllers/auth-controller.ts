@@ -18,6 +18,35 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
+export const logoutUser = async (req: FastifyRequest, reply: FastifyReply) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return reply.code(401).send({ message: "No token provided" });
+    }
+
+    const payload: any = jwt.verify(token, process.env.ACCESS_SECRET!);
+    console.log(payload);
+    const user = await prisma.user.findUnique({
+      where: { id: JSON.parse(payload.userId) },
+    });
+
+    if (!user) {
+      return reply.code(404).send({ message: "User not found" });
+    }
+
+    // 🧨 Invalidate refresh token
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken: null },
+    });
+
+    return reply.send({ message: "Logged out successfully" });
+  } catch (err) {
+    return reply.code(401).send({ message: "Invalid or expired token" });
+  }
+};
+
 export const refreshToken = async (
   req: FastifyRequest<{ Body: { token: string } }>,
   reply: FastifyReply
@@ -27,16 +56,13 @@ export const refreshToken = async (
 
   try {
     const payload: any = jwt.verify(token, process.env.REFRESH_SECRET!);
-    const payloadUser = JSON.parse(payload.userId);
     const user = await prisma.user.findUnique({
-      where: { id: payloadUser.id },
+      where: { id: JSON.parse(payload.userId) },
     });
     if (!user || user.refreshToken !== token)
       return reply.code(401).send({ message: "Invalid refresh token" });
 
-    const { accessToken, refreshToken: newRefresh } = generateTokens(
-      JSON.stringify(user)
-    );
+    const { accessToken, refreshToken: newRefresh } = generateTokens(user.id);
 
     await prisma.user.update({
       where: { id: user.id },
@@ -74,13 +100,20 @@ export const login = async (
         .status(400)
         .send({ message: "Invalid password. Check Credentials and try again" });
     }
-    const { accessToken, refreshToken } = generateTokens(JSON.stringify(user));
+    const { accessToken, refreshToken } = generateTokens(
+      JSON.stringify(user.id)
+    );
     await prisma.user.update({
       where: { email },
       data: { refreshToken },
     });
     return reply.status(200).send({
-      user: { id: user?.id, name: user?.name, email: user?.email },
+      user: {
+        id: user?.id,
+        name: user?.name,
+        email: user?.email,
+        role: user?.role,
+      },
       message: "User logged in successfully",
       accessToken,
       refreshToken,
@@ -112,15 +145,18 @@ export const register = async (
         password: hashedPassword,
       },
     });
-    const { accessToken, refreshToken } = generateTokens(
-      JSON.stringify({ userId: user.id, email, name })
-    );
+    const { accessToken, refreshToken } = generateTokens(user.id);
     await prisma.user.update({
       where: { email },
       data: { refreshToken },
     });
     return reply.status(201).send({
-      user: { id: user?.id, name: user?.name, email: user?.email },
+      user: {
+        id: user?.id,
+        name: user?.name,
+        email: user?.email,
+        role: user?.role,
+      },
       message: "User registered successfully",
       accessToken,
       refreshToken,
