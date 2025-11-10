@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import type { RegisterBody } from "@/lib/auth-types";
 import { z } from "zod";
 import { PrismaClient } from "@/generated/prisma/client";
+import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { generateTokens } from "@/utils/generate-tokens";
 const prisma = new PrismaClient();
@@ -17,6 +18,79 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
+export const refreshToken = async (
+  req: FastifyRequest<{ Body: { token: string } }>,
+  reply: FastifyReply
+) => {
+  const { token } = req.body;
+  if (!token) return reply.code(400).send({ message: "Token missing" });
+
+  try {
+    const payload: any = jwt.verify(token, process.env.REFRESH_SECRET!);
+    const payloadUser = JSON.parse(payload.userId);
+    const user = await prisma.user.findUnique({
+      where: { id: payloadUser.id },
+    });
+    if (!user || user.refreshToken !== token)
+      return reply.code(401).send({ message: "Invalid refresh token" });
+
+    const { accessToken, refreshToken: newRefresh } = generateTokens(
+      JSON.stringify(user)
+    );
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken: newRefresh },
+    });
+
+    return reply.send({ accessToken, refreshToken: newRefresh });
+  } catch (err) {
+    console.error(err);
+    return reply
+      .code(401)
+      .send({ message: "Invalid or expired refresh token" });
+  }
+};
+
+export const login = async (
+  req: FastifyRequest<{ Body: z.infer<typeof loginSchema> }>,
+  reply: FastifyReply
+) => {
+  try {
+    const parsedBody = loginSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      return reply.status(400).send({ error: "Invalid request body" });
+    }
+    const { email, password } = parsedBody.data;
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return reply
+        .status(400)
+        .send({ message: "User not found. Invalid email" });
+    }
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return reply
+        .status(400)
+        .send({ message: "Invalid password. Check Credentials and try again" });
+    }
+    const { accessToken, refreshToken } = generateTokens(JSON.stringify(user));
+    await prisma.user.update({
+      where: { email },
+      data: { refreshToken },
+    });
+    return reply.status(200).send({
+      user: { id: user?.id, name: user?.name, email: user?.email },
+      message: "User logged in successfully",
+      accessToken,
+      refreshToken,
+    });
+  } catch (error) {
+    console.error(error);
+    return reply.status(500).send({ error: "Internal Server Error" });
+  }
+};
+
 export const register = async (
   req: FastifyRequest<{ Body: RegisterBody }>,
   reply: FastifyReply
@@ -31,16 +105,20 @@ export const register = async (
     if (existing)
       return reply.code(400).send({ message: "Email already exists" });
     const hashedPassword = await bcrypt.hash(password, 10);
-    const { accessToken, refreshToken } = generateTokens(email);
     const user = await prisma.user.create({
       data: {
         email,
         name,
         password: hashedPassword,
-        refreshToken,
       },
     });
-    console.log("Registered user:", user);
+    const { accessToken, refreshToken } = generateTokens(
+      JSON.stringify({ userId: user.id, email, name })
+    );
+    await prisma.user.update({
+      where: { email },
+      data: { refreshToken },
+    });
     return reply.status(201).send({
       user: { id: user?.id, name: user?.name, email: user?.email },
       message: "User registered successfully",
