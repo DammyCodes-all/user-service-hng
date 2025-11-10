@@ -1,7 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import jwt from "jsonwebtoken";
 
-import { prisma } from "@/index";
 export async function verifyToken(req: FastifyRequest, reply: FastifyReply) {
   try {
     const authHeader = req.headers.authorization;
@@ -20,15 +19,4 @@ export async function verifyToken(req: FastifyRequest, reply: FastifyReply) {
     console.error("Token verification error:", err);
     return reply.code(401).send({ message: "Invalid or expired token" });
   }
-}
-
-export async function verifyAdmin(req: FastifyRequest, reply: FastifyReply) {
-  const user = (req as any).user;
-  if (!user) return reply.code(401).send({ message: "No authenticated user" });
-
-  const role = (user.role ?? "").toString().toLowerCase();
-  if (role !== "admin") {
-    return reply.code(403).send({ message: "Forbidden: Admins only" });
-  }
-  return;
 }

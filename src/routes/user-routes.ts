@@ -9,14 +9,10 @@ import {
   updatePushTokenById,
   deletePushTokenById,
 } from "@/controllers/user-controller";
-import { verifyToken, verifyAdmin } from "@/middleware/verifyToken";
+import { verifyToken } from "@/middleware/verifyToken";
 export const UserRoutes = (app: FastifyInstance) => {
   app.get("/profile", { preHandler: [verifyToken] }, getUserProfile);
-  app.get<{ Params: { id: string } }>(
-    "/profile/:id",
-    { preHandler: [verifyToken] },
-    getProfileById
-  );
+  app.get<{ Params: { id: string } }>("/profile/:id", getProfileById);
   app.get<{ Params: { id: string } }>(
     "/preference/:id",
     { preHandler: [verifyToken] },
