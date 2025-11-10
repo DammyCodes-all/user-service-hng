@@ -1,10 +1,10 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import type { RegisterBody } from "@/lib/auth-types";
-import { success, z } from "zod";
-import { prisma } from "@/index";
+import { z } from "zod";
+import { prisma } from "../index";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { generateTokens } from "@/utils/generate-tokens";
+import { generateTokens } from "../utils/generate-tokens";
 
 const registerSchema = z.object({
   name: z.string(),
