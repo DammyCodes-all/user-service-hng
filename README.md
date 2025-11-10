@@ -67,11 +67,28 @@ This service is the single source of truth for all user data. It handles:
 
 ## API Endpoints
 
-All request and response bodies are in JSON format.
+**Note: All endpoints are prefixed with `/api/v1`.**
 
-### Authentication Routes
+### Health Check
 
-#### `POST /register`
+#### `GET /health`
+
+Checks the health of the service, including database connectivity.
+
+**Success Response (200):**
+
+```json
+{
+  "status": "ok",
+  "uptime": 3.764,
+  "timestamp": "2025-11-10T15:00:00.000Z",
+  "db": "ok"
+}
+```
+
+### Authentication Routes (`/auth`)
+
+#### `POST /auth/register`
 
 Registers a new user.
 
@@ -81,8 +98,7 @@ Registers a new user.
 {
   "name": "John Doe",
   "email": "john.doe@example.com",
-  "password": "password123",
-  "role": "user"
+  "password": "password123"
 }
 ```
 
@@ -90,21 +106,22 @@ Registers a new user.
 
 ```json
 {
-  "user": {
+  "data": {
     "id": "clx...",
     "name": "John Doe",
     "email": "john.doe@example.com",
-    "role": "user"
+    "role": "user",
+    "access_token": "...",
+    "refresh_token": "..."
   },
   "message": "User registered successfully",
-  "access_token": "...",
-  "refresh_token": "..."
+  "success": true
 }
 ```
 
-#### `POST /login`
+#### `POST /auth/login`
 
-Logs in an existing user.
+Logs in a user and returns access and refresh tokens.
 
 **Request Body:**
 
@@ -119,21 +136,22 @@ Logs in an existing user.
 
 ```json
 {
-  "user": {
+  "data": {
     "id": "clx...",
     "name": "John Doe",
     "email": "john.doe@example.com",
-    "role": "user"
+    "role": "user",
+    "access_token": "...",
+    "refresh_token": "..."
   },
   "message": "User logged in successfully",
-  "access_token": "...",
-  "refresh_token": "..."
+  "success": true
 }
 ```
 
-#### `POST /refresh`
+#### `POST /auth/refresh`
 
-Refreshes an access token.
+Generates a new access token using a refresh token.
 
 **Request Body:**
 
@@ -147,101 +165,108 @@ Refreshes an access token.
 
 ```json
 {
-  "access_token": "...",
-  "refresh_token": "..."
-}
-```
-
-#### `POST /logout`
-
-Logs out a user by invalidating their refresh token.
-
-**Headers:**
-
-- `Authorization`: `Bearer <access_token>`
-
-**Success Response (200):**
-
-```json
-{
-  "message": "Logged out successfully"
-}
-```
-
-### User Routes
-
-All user routes require authentication.
-
-**Headers:**
-
-- `Authorization`: `Bearer <access_token>`
-
-#### `GET /profile`
-
-Gets the profile of the currently authenticated user.
-
-**Success Response (200):**
-
-```json
-{
-  "id": "clx...",
-  "name": "John Doe",
-  "email": "john.doe@example.com",
-  "role": "user",
-  "created_at": "2025-11-10T14:28:57.000Z",
-  "preference": {
-    "id": "clx...",
-    "email_enabled": true,
-    "push_enabled": true,
-    "language": "en",
-    "timezone": "UTC"
+  "data": {
+    "access_token": "...",
+    "refresh_token": "..."
   },
-  "pushTokens": [
-    {
-      "id": "clx...",
-      "token": "...",
-      "platform": "android",
-      "device_name": "Pixel 8"
-    }
-  ]
+  "message": "Token refreshed successfully",
+  "success": true
 }
 ```
 
-#### `GET /profile/:id`
+#### `POST /auth/logout`
 
-Gets the profile of a user by their ID.
-
-**Success Response (200):**
-
-(Same as `GET /profile`)
-
-#### `GET /preference/:id`
-
-Gets the notification preferences of a user by their ID.
+Logs out a user by invalidating their refresh token. Requires authentication.
 
 **Success Response (200):**
 
 ```json
 {
-  "preference": {
+  "message": "Logged out successfully",
+  "success": true
+}
+```
+
+### User Routes (`/users`)
+
+Authentication is required for all user routes.
+
+#### `GET /users/profile`
+
+Retrieves the profile of the authenticated user.
+
+**Success Response (200):**
+
+```json
+{
+  "data": {
     "id": "clx...",
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "role": "user",
+    "created_at": "2025-11-10T14:28:57.000Z",
+    "preference": {
+      "id": "clx...",
+      "userId": "clx...",
+      "email_enabled": true,
+      "push_enabled": true,
+      "language": "en",
+      "timezone": null
+    },
+    "pushTokens": [
+      {
+        "id": "clx...",
+        "userId": "clx...",
+        "token": "...",
+        "platform": "android",
+        "device_name": null,
+        "created_at": "2025-11-10T14:30:00.000Z"
+      }
+    ]
+  },
+  "message": "User profile fetched successfully",
+  "success": true
+}
+```
+
+#### `GET /users/profile/:id`
+
+Retrieves the public profile of a user by their ID.
+
+**Success Response (200):**
+
+(Same response body as `GET /users/profile`)
+
+#### `GET /users/preference/:id`
+
+Retrieves the notification preferences for a user by their ID.
+
+**Success Response (200):**
+
+```json
+{
+  "data": {
+    "id": "clx...",
+    "userId": "clx...",
     "email_enabled": true,
     "push_enabled": true,
     "language": "en",
-    "timezone": "UTC"
-  }
+    "timezone": null
+  },
+  "message": "Preference fetched successfully",
+  "success": true
 }
 ```
 
-#### `POST /preference/:id`
+#### `POST /users/preference/:id`
 
-Creates notification preferences for a user.
+Creates notification preferences for a user by their ID.
 
-**Request Body:**
+**Request Body (Optional):**
 
 ```json
 {
-  "email_enabled": true,
+  "email_enabled": false,
   "push_enabled": false,
   "language": "fr",
   "timezone": "Europe/Paris"
@@ -250,25 +275,26 @@ Creates notification preferences for a user.
 
 **Success Response (201):**
 
-(Same as `GET /preference/:id`)
+(Same response body as `GET /users/preference/:id`)
 
-#### `PATCH /preference/:id`
+#### `PATCH /users/preference/:id`
 
-Updates the notification preferences of a user.
+Updates the notification preferences for a user by their ID.
 
 **Request Body:**
 
 ```json
 {
-  "push_enabled": true
+  "push_enabled": true,
+  "language": "es"
 }
 ```
 
 **Success Response (200):**
 
-(Same as `GET /preference/:id`)
+(Same response body as `GET /users/preference/:id`)
 
-#### `POST /push-token`
+#### `POST /users/push-token`
 
 Adds a new push notification token for the authenticated user.
 
@@ -286,18 +312,22 @@ Adds a new push notification token for the authenticated user.
 
 ```json
 {
-  "pushToken": {
+  "data": {
     "id": "clx...",
+    "userId": "clx...",
     "token": "your-push-token",
     "platform": "ios",
-    "device_name": "iPhone 15"
-  }
+    "device_name": "iPhone 15",
+    "created_at": "2025-11-10T14:35:00.000Z"
+  },
+  "message": "Push token added successfully",
+  "success": true
 }
 ```
 
-#### `PATCH /push-token/:id`
+#### `PATCH /users/push-token/:id`
 
-Updates an existing push token.
+Updates a push notification token by its ID.
 
 **Request Body:**
 
@@ -309,11 +339,11 @@ Updates an existing push token.
 
 **Success Response (200):**
 
-(Same as `POST /push-token`)
+(Same response body as `POST /users/push-token`)
 
-#### `DELETE /push-token/:id`
+#### `DELETE /users/push-token/:id`
 
-Deletes a push token.
+Deletes a push notification token by its ID.
 
 **Success Response (204):**
 
@@ -330,4 +360,6 @@ Deletes a push token.
 - `npm run build`: Compiles the TypeScript code.
 - `npm run start`: Starts the compiled application.
 - `npm run dev`: Starts the application in development mode with hot-reloading.
-- `pnpm test`: (Not yet implemented)
+- `npm test`: (Not yet implemented)
+
+### made with ❤ by group 3

@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import type { RegisterBody } from "@/lib/auth-types";
-import { z } from "zod";
+import { success, z } from "zod";
 import { prisma } from "@/index";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
@@ -38,7 +38,7 @@ export const logoutUser = async (req: FastifyRequest, reply: FastifyReply) => {
       data: { refreshToken: null },
     });
 
-    return reply.send({ message: "Logged out successfully" });
+    return reply.send({ message: "Logged out successfully", success: true });
   } catch (err) {
     return reply.code(401).send({ message: "Invalid or expired token" });
   }
@@ -69,7 +69,11 @@ export const refreshToken = async (
       data: { refreshToken: newRefresh },
     });
 
-    return reply.send({ access_token: accessToken, refresh_token: newRefresh });
+    return reply.send({
+      data: { access_token: accessToken, refresh_token: newRefresh },
+      message: "Token refreshed successfully",
+      success: true,
+    });
   } catch (err) {
     console.error(err);
     return reply
@@ -109,15 +113,16 @@ export const login = async (
       data: { refreshToken },
     });
     return reply.status(200).send({
-      user: {
+      data: {
         id: user?.id,
         name: user?.name,
         email: user?.email,
         role: user?.role,
+        access_token: accessToken,
+        refresh_token: refreshToken,
       },
       message: "User logged in successfully",
-      access_token: accessToken,
-      refresh_token: refreshToken,
+      success: true,
     });
   } catch (error) {
     console.error(error);
@@ -157,15 +162,16 @@ export const register = async (
       data: { refreshToken },
     });
     return reply.status(201).send({
-      user: {
+      data: {
         id: user?.id,
         name: user?.name,
         email: user?.email,
         role: user?.role,
+        access_token: accessToken,
+        refresh_token: refreshToken,
       },
       message: "User registered successfully",
-      access_token: accessToken,
-      refresh_token: refreshToken,
+      success: true,
     });
   } catch (error) {
     console.error(error);

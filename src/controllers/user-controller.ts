@@ -19,13 +19,17 @@ export const getUserProfile = async (
     if (!user) return reply.status(404).send({ message: "User not found" });
 
     return reply.status(200).send({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      created_at: user.created_at,
-      preference: user.preference ?? null,
-      pushTokens: user.pushTokens ?? [],
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        created_at: user.created_at,
+        preference: user.preference ?? null,
+        pushTokens: user.pushTokens ?? [],
+      },
+      message: "User profile fetched successfully",
+      success: true,
     });
   } catch (error) {
     console.error(error);
@@ -49,13 +53,17 @@ export const getProfileById = async (
     if (!user) return reply.status(404).send({ message: "User not found" });
 
     return reply.status(200).send({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      created_at: user.created_at,
-      preference: user.preference ?? null,
-      pushTokens: user.pushTokens ?? [],
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        created_at: user.created_at,
+        preference: user.preference ?? null,
+        pushTokens: user.pushTokens ?? [],
+      },
+      message: "User profile fetched successfully",
+      success: true,
     });
   } catch (error) {
     console.error(error);
@@ -75,7 +83,11 @@ export const getPreferenceById: RouteHandlerMethod = async (req, reply) => {
     if (!preference) {
       return reply.status(404).send({ message: "Preference not found" });
     }
-    return reply.status(200).send({ preference });
+    return reply.status(200).send({
+      data: preference,
+      message: "Preference fetched successfully",
+      success: true,
+    });
   } catch (error) {
     console.error(error);
     return reply.status(500).send({ message: "Internal Server Error" });
@@ -112,7 +124,11 @@ export const updatePreferenceById: RouteHandlerMethod = async (req, reply) => {
       data: body as any,
     });
 
-    return reply.status(200).send({ preference: updated });
+    return reply.status(200).send({
+      data: updated,
+      message: "Preference updated successfully",
+      success: true,
+    });
   } catch (error) {
     console.error(error);
     return reply.status(500).send({ message: "Internal Server Error" });
@@ -147,7 +163,6 @@ export const createPreferenceById: RouteHandlerMethod = async (req, reply) => {
       timezone?: string | null;
     }>;
 
-    // apply defaults if not provided
     const email_enabled = body?.email_enabled ?? true;
     const push_enabled = body?.push_enabled ?? true;
     const language = body?.language ?? "en";
@@ -163,7 +178,11 @@ export const createPreferenceById: RouteHandlerMethod = async (req, reply) => {
       },
     });
 
-    return reply.status(201).send({ preference: created });
+    return reply.status(201).send({
+      data: created,
+      message: "Preference created successfully",
+      success: true,
+    });
   } catch (error) {
     console.error(error);
     return reply.status(500).send({ message: "Internal Server Error" });
@@ -194,7 +213,11 @@ export const addPushToken: RouteHandlerMethod = async (req, reply) => {
       },
     });
 
-    return reply.status(201).send({ pushToken: created });
+    return reply.status(201).send({
+      data: created,
+      message: "Push token added successfully",
+      success: true,
+    });
   } catch (error) {
     console.error(error);
     return reply.status(500).send({ message: "Internal Server Error" });
@@ -207,19 +230,33 @@ export const updatePushTokenById: RouteHandlerMethod = async (req, reply) => {
     if (!userId) return reply.status(401).send({ message: "Unauthorized" });
 
     const { id } = (req.params as { id?: string }) ?? {};
-    if (!id) return reply.status(400).send({ message: "Push token ID is required" });
+    if (!id)
+      return reply.status(400).send({ message: "Push token ID is required" });
 
     const existing = await prisma.pushToken.findUnique({ where: { id } });
-    if (!existing) return reply.status(404).send({ message: "Push token not found" });
-    if (existing.userId !== userId) return reply.status(403).send({ message: "Forbidden" });
+    if (!existing)
+      return reply.status(404).send({ message: "Push token not found" });
+    if (existing.userId !== userId)
+      return reply.status(403).send({ message: "Forbidden" });
 
-    const body = req.body as Partial<{ token: string; platform: string; device_name?: string | null }>;
+    const body = req.body as Partial<{
+      token: string;
+      platform: string;
+      device_name?: string | null;
+    }>;
     if (!body || Object.keys(body).length === 0) {
       return reply.status(400).send({ message: "No data provided to update" });
     }
 
-    const updated = await prisma.pushToken.update({ where: { id }, data: body as any });
-    return reply.status(200).send({ pushToken: updated });
+    const updated = await prisma.pushToken.update({
+      where: { id },
+      data: body as any,
+    });
+    return reply.status(200).send({
+      data: updated,
+      message: "Push token updated successfully",
+      success: true,
+    });
   } catch (error) {
     console.error(error);
     return reply.status(500).send({ message: "Internal Server Error" });
@@ -232,11 +269,14 @@ export const deletePushTokenById: RouteHandlerMethod = async (req, reply) => {
     if (!userId) return reply.status(401).send({ message: "Unauthorized" });
 
     const { id } = (req.params as { id?: string }) ?? {};
-    if (!id) return reply.status(400).send({ message: "Push token ID is required" });
+    if (!id)
+      return reply.status(400).send({ message: "Push token ID is required" });
 
     const existing = await prisma.pushToken.findUnique({ where: { id } });
-    if (!existing) return reply.status(404).send({ message: "Push token not found" });
-    if (existing.userId !== userId) return reply.status(403).send({ message: "Forbidden" });
+    if (!existing)
+      return reply.status(404).send({ message: "Push token not found" });
+    if (existing.userId !== userId)
+      return reply.status(403).send({ message: "Forbidden" });
 
     await prisma.pushToken.delete({ where: { id } });
     return reply.status(204).send();
