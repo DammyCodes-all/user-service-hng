@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest, RouteHandlerMethod } from "fastify";
 import { prisma } from "@/index";
+import id from "zod/v4/locales/id.js";
 
 export const getUserProfile = async (
   req: FastifyRequest,
@@ -10,11 +11,22 @@ export const getUserProfile = async (
     if (!userId) {
       return reply.status(401).send({ message: "Unauthorized" });
     }
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      return reply.status(404).send({ message: "User not found" });
-    }
-    return reply.status(200).send({ user });
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { preference: true, pushTokens: true },
+    });
+    if (!user) return reply.status(404).send({ message: "User not found" });
+
+    return reply.status(200).send({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      created_at: user.created_at,
+      preference: user.preference ?? null,
+      pushTokens: user.pushTokens ?? [],
+    });
   } catch (error) {
     console.error(error);
     return reply.status(500).send({ message: "Internal Server Error" });
@@ -30,11 +42,21 @@ export const getProfileById = async (
     if (!userId) {
       return reply.status(400).send({ message: "User ID is required" });
     }
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      return reply.status(404).send({ message: "User not found" });
-    }
-    return reply.status(200).send({ user });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { preference: true, pushTokens: true },
+    });
+    if (!user) return reply.status(404).send({ message: "User not found" });
+
+    return reply.status(200).send({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      created_at: user.created_at,
+      preference: user.preference ?? null,
+      pushTokens: user.pushTokens ?? [],
+    });
   } catch (error) {
     console.error(error);
     return reply.status(500).send({ message: "Internal Server Error" });
@@ -142,6 +164,82 @@ export const createPreferenceById: RouteHandlerMethod = async (req, reply) => {
     });
 
     return reply.status(201).send({ preference: created });
+  } catch (error) {
+    console.error(error);
+    return reply.status(500).send({ message: "Internal Server Error" });
+  }
+};
+
+export const addPushToken: RouteHandlerMethod = async (req, reply) => {
+  try {
+    const userId = (req as FastifyRequest & { user?: any }).user?.id ?? null;
+    if (!userId) return reply.status(401).send({ message: "Unauthorized" });
+
+    const body = req.body as {
+      token?: string;
+      platform?: string;
+      device_name?: string | null;
+    };
+
+    if (!body || !body.token) {
+      return reply.status(400).send({ message: "Push token is required" });
+    }
+
+    const created = await prisma.pushToken.create({
+      data: {
+        userId,
+        token: body.token,
+        platform: body.platform ?? "android",
+        device_name: body.device_name ?? null,
+      },
+    });
+
+    return reply.status(201).send({ pushToken: created });
+  } catch (error) {
+    console.error(error);
+    return reply.status(500).send({ message: "Internal Server Error" });
+  }
+};
+
+export const updatePushTokenById: RouteHandlerMethod = async (req, reply) => {
+  try {
+    const userId = (req as FastifyRequest & { user?: any }).user?.id ?? null;
+    if (!userId) return reply.status(401).send({ message: "Unauthorized" });
+
+    const { id } = (req.params as { id?: string }) ?? {};
+    if (!id) return reply.status(400).send({ message: "Push token ID is required" });
+
+    const existing = await prisma.pushToken.findUnique({ where: { id } });
+    if (!existing) return reply.status(404).send({ message: "Push token not found" });
+    if (existing.userId !== userId) return reply.status(403).send({ message: "Forbidden" });
+
+    const body = req.body as Partial<{ token: string; platform: string; device_name?: string | null }>;
+    if (!body || Object.keys(body).length === 0) {
+      return reply.status(400).send({ message: "No data provided to update" });
+    }
+
+    const updated = await prisma.pushToken.update({ where: { id }, data: body as any });
+    return reply.status(200).send({ pushToken: updated });
+  } catch (error) {
+    console.error(error);
+    return reply.status(500).send({ message: "Internal Server Error" });
+  }
+};
+
+export const deletePushTokenById: RouteHandlerMethod = async (req, reply) => {
+  try {
+    const userId = (req as FastifyRequest & { user?: any }).user?.id ?? null;
+    if (!userId) return reply.status(401).send({ message: "Unauthorized" });
+
+    const { id } = (req.params as { id?: string }) ?? {};
+    if (!id) return reply.status(400).send({ message: "Push token ID is required" });
+
+    const existing = await prisma.pushToken.findUnique({ where: { id } });
+    if (!existing) return reply.status(404).send({ message: "Push token not found" });
+    if (existing.userId !== userId) return reply.status(403).send({ message: "Forbidden" });
+
+    await prisma.pushToken.delete({ where: { id } });
+    return reply.status(204).send();
   } catch (error) {
     console.error(error);
     return reply.status(500).send({ message: "Internal Server Error" });
