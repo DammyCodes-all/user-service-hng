@@ -1,7 +1,5 @@
 import { FastifyInstance } from "fastify";
-
+import { register } from "@/controllers/auth-controller";
 export const AuthRoutes = (app: FastifyInstance) => {
-  app.get("/login", (req, res) => {
-    res.send({ message: "Login route" });
-  });
+  app.post("/register", register);
 };
