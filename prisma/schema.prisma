@@ -10,6 +10,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // Use DATABASE_URL to match prisma.config.ts and common conventions
   url      = env("DATABASE_URI")
 }
 
@@ -23,4 +24,29 @@ model User {
   refreshToken String?  // store the latest refresh token
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  preference   UserPreference? @relation("UserPreferenceToUser")
+  pushTokens   PushToken[] @relation("PushTokenToUser")
+}
+
+
+model UserPreference {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  emailEnabled Boolean  @default(true)
+  pushEnabled  Boolean  @default(true)
+  language     String   @default("en")
+  timezone     String?  
+  user         User     @relation("UserPreferenceToUser", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PushToken {
+  id         String   @id @default(uuid())
+  userId     String
+  token      String
+  platform   String   @default("android")// e.g., "android", "ios", "web"
+  deviceName String?  // optional: "iPhone 15 Pro"
+  createdAt  DateTime @default(now())
+  user       User     @relation("PushTokenToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

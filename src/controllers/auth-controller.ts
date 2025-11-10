@@ -33,7 +33,6 @@ export const logoutUser = async (req: FastifyRequest, reply: FastifyReply) => {
       return reply.code(404).send({ message: "User not found" });
     }
 
-    // 🧨 Invalidate refresh token
     await prisma.user.update({
       where: { id: user.id },
       data: { refreshToken: null },
